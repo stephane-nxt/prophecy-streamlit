@@ -16,6 +16,15 @@ credentials:
       password: abc # Will be hashed automatically
 ```
 
+# Configure your environment
+create an .env file and take example with the .env.example file 
+```
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+AWS_BUCKET_NAME=
+```
+
 # Run with docker
 to run it do: 
 ```bash

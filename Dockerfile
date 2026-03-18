@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN pip install streamlit streamlit-authenticator pandas numpy
+RUN pip install streamlit streamlit-authenticator pandas numpy boto3 pyarrow plotly
 
 COPY . .
 
