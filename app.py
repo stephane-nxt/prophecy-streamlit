@@ -7,6 +7,9 @@ import streamlit_authenticator as stauth
 from yaml.loader import SafeLoader
 import os
 import plotly.express as px
+import requests
+
+API_URL = os.environ.get('PROPHECY_API_URL')
 
 def get_authenticator():
     with open('config.yaml', 'r') as file:
@@ -17,6 +20,10 @@ def get_authenticator():
         config['cookie']['key'],
         config['cookie']['expiry_days'],
     )
+
+def load_stats():
+    response = requests.get(f'{API_URL}/stats')
+    return response.json()
 
 @st.cache_data
 def load_data():
@@ -50,35 +57,36 @@ def top_data(data, column_name, top_n=None):
     else:
         return result
 
-
-
 def dashboard(auth):
-    data = load_data()
+    # data = load_data()
+    data_stats = load_stats()
+    logo_path = 'img/prophecy_logo.png'
+    with st.sidebar:
+        if os.path.exists(logo_path):
+            st.image(logo_path, width='content')
+        else:
+            st.title("Prophecy")
+        st.markdown("<br>", unsafe_allow_html=True)
+        auth.logout()
     
     with st.container():
-        header_col1, header_col2 = st.columns([3, 1])
-        with header_col1:
-            st.title(f"Welcome {st.session_state.get("username")}")
-        with header_col2:
-            auth.logout()
-        if data is not None:
-            top_product = top_data(data, "product_name")
-            top_category = top_data(data, "category")
-            top_sold = top_data(data, "is_sold")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                fig_sold = px.pie(top_sold, values="count", names="is_sold", title="Sold vs Not Sold")
-                st.plotly_chart(fig_sold, width="stretch")
-            with col2:
-                fig_category = px.bar(top_category, x="category", y="count", title="Top Categories")
-                st.plotly_chart(fig_category, width="stretch")
-            with col3:
-                fig_product = px.bar(top_product, x="product_name", y="count", title="Top Products")
-                st.plotly_chart(fig_product, width="stretch")
-        else:
-            st.error("No data found")
-
-
+        st.title(f"Bienvenue {st.session_state.get("username")},")
+        col_1_1, col_1_2, col_1_3 = st.columns(3)
+        col_2_1, col_2_2, col_2_3 = st.columns(3)
+        with col_1_1:
+            st.metric(label="Total des produits", value=data_stats['total_products'])
+        with col_1_2:
+            st.metric(label="Produits à commander", value=data_stats['products_to_order'])
+        with col_1_3:
+            st.metric(label="Coût estimé du réassort", value=data_stats['estimated_total_cost'])
+        with col_2_1:
+            st.metric(label="Rupture imminente", value=data_stats['rupture_imminente'], help="Le stock sera vide avant la livraison")
+        with col_2_2:
+            st.metric(label="Forte demande", value=data_stats['forte_demande'])
+        with col_2_3:
+            st.metric(label="Produits obsolètes", value=data_stats['obsolete'])
+        st.metric(label="Couverture stock", value=data_stats['avg_coverage_days'])
+        
 auth = get_authenticator()
 st.set_page_config(page_title="Prophecy", page_icon="🔮", layout="wide")
 
