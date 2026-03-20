@@ -29,6 +29,7 @@ def load_categories():
     response = requests.get(f'{API_URL}/categories')
     return response.json()['data']
 
+
 def make_reassort(category_id, urgency_selected, growth_selected, quantity_selected, limit_selected, offset_selected):
     payload = {
         'category_id': category_id,
@@ -53,11 +54,22 @@ def make_reassort(category_id, urgency_selected, growth_selected, quantity_selec
                     'Etat du stock': item['alert'],
                     'Date idéale pour commander': item['order_by_date']
                 })
-            return result
+            df = pd.DataFrame(result)
+            return df
         else:
-            return result
+            return pd.DataFrame()
     else:
-        return result
+        return pd.DataFrame()
+
+
+def style_reassort_df(df: pd.DataFrame):
+    return df.style.apply(
+        lambda col: ['color: #FF6961' if value == 'Rupture imminente' else '' for value in col],
+        subset=['Etat du stock'],
+    ).apply(
+        lambda col: ['color: #6efa5f' if value > 0 else '' for value in col],
+        subset=['Quantité à commander'],
+    )
 
 @st.cache_data
 def load_data():
@@ -90,6 +102,8 @@ def top_data(data, column_name, top_n=None):
         return result.head(top_n)
     else:
         return result
+
+
 
 def dashboard(auth):
     # data = load_data()
@@ -152,7 +166,7 @@ def dashboard(auth):
                 category_id = [category['category_id'] for category in data_categories if category['category'] == category_selected][0]
             data_reassort = make_reassort(category_id, urgency_selected, growth_selected, quantity_selected, limit_selected, offset_selected)
             if len(data_reassort) > 0:
-                st.dataframe(data_reassort)
+                st.dataframe(style_reassort_df(data_reassort))
             else:
                 st.error("No reassort data found")
             
