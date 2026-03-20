@@ -7,3 +7,5 @@ services:
     container_name: prophecy-streamlit
     ports:
       - 8501:8501
+    env_file:
+      - .env
