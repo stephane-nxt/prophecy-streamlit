@@ -9,12 +9,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Check secrets (debugging)
-      run: |
-        echo "IP_SERVER: ${{ secrets.IP_SERVER }}"
-        echo "USERNAME_SERVER: ${{ secrets.USERNAME_SERVER }}"
-        echo "PATH_APP_SERVER: ${{ secrets.PATH_APP_SERVER }}"
-        echo "KEY_SERVER: ${{ secrets.KEY_SERVER }}"
     - name: Deploying Prophecy Streamlit
       uses: appleboy/ssh-action@v1.2.0
       with:
