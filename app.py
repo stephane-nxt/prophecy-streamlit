@@ -45,13 +45,13 @@ def make_reassort(category_id, urgency_selected, growth_selected, quantity_selec
         if len(data['data']) > 0:
             for item in data['data']:
                 result.append({
-                    'product_name': item['product_name'],
-                    'cycle_status': item['cycle_status'],
-                    'alert': item['alert'],
-                    'supplier_name': item['supplier_name'],
-                    'obsolescence_score': item['obsolescence_score'],
-                    'prix_vente': item['prix_vente'],
-                    'ideal_delivery': item['ideal_delivery']
+                    'Article': item['product_name'],
+                    'Ventes prévues en 30 jours': item['ventes_prevues_30j'],
+                    'Quantité en stock': item['qty_available'],
+                    'Quantité à commander': item['qty_to_order'],
+                    'Etat de l\'article': item['cycle_status'],
+                    'Etat du stock': item['alert'],
+                    'Date idéale pour commander': item['order_by_date']
                 })
             return result
         else:
