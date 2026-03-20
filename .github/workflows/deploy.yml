@@ -12,12 +12,12 @@ jobs:
     - name: Deploying Prophecy Streamlit
       uses: appleboy/ssh-action@v1.2.0
       with:
-        host: ${{ secrets.IP_SERVER }}
-        username: ${{ secrets.USERNAME_SERVER }}
+        host: ${{ variables.IP_SERVER }}
+        username: ${{ variables.USERNAME_SERVER }}
         key: ${{ secrets.KEY_SERVER }}
         port: 22
         script: |
-          cd ${{ secrets.PATH_APP_SERVER }}
+          cd ${{ variables.PATH_APP_SERVER }}
           git pull origin main
           docker compose down
           docker rmi prophecy-streamlit:latest
