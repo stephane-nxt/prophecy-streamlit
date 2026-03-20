@@ -88,7 +88,8 @@ def dashboard(auth):
         st.metric(label="Couverture stock", value=data_stats['avg_coverage_days'])
         
 auth = get_authenticator()
-st.set_page_config(page_title="Prophecy", page_icon="🔮", layout="wide")
+
+st.set_page_config(page_title="Prophecy", page_icon='img/favicon.png', layout="wide")
 
 try:
     auth.login()
