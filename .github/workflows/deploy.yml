@@ -9,15 +9,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: Check secrets (debugging)
+      run: |
+        echo "IP_SERVER: ${{ secrets.IP_SERVER }}"
+        echo "USERNAME_SERVER: ${{ secrets.USERNAME_SERVER }}"
+        echo "PATH_APP_SERVER: ${{ secrets.PATH_APP_SERVER }}"
+        echo "KEY_SERVER: ${{ secrets.KEY_SERVER }}"
+    steps:
     - name: Deploying Prophecy Streamlit
       uses: appleboy/ssh-action@v1.2.0
       with:
-        host: ${{ variables.IP_SERVER }}
-        username: ${{ variables.USERNAME_SERVER }}
+        host: ${{ secrets.IP_SERVER }}
+        username: ${{ secrets.USERNAME_SERVER }}
         key: ${{ secrets.KEY_SERVER }}
         port: 22
         script: |
-          cd ${{ variables.PATH_APP_SERVER }}
+          cd ${{ secrets.PATH_APP_SERVER }}
           git pull origin main
           docker compose down
           docker rmi prophecy-streamlit:latest
