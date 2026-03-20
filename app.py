@@ -85,7 +85,7 @@ def dashboard(auth):
             st.metric(label="Forte demande", value=data_stats['forte_demande'])
         with col_2_3:
             st.metric(label="Produits obsolètes", value=data_stats['obsolete'])
-        st.metric(label="Couverture stock", value=data_stats['avg_coverage_days'])
+        st.metric(label="Couverture stock", value=data_stats['avg_coverage_days'], help="Combien de jours le stock actuel peut tenir avant rupture")
         
 auth = get_authenticator()
 
