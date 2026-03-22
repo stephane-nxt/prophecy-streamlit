@@ -696,7 +696,7 @@ _inject_prophecy_styles()
 auth = get_authenticator()
 
 try:
-    auth.login()
+    auth.login(fields={'Form name':'Connectez-vous sur Prophecy', 'Username':'Utilisateur', 'Password':'Mot de passe','Login':'Se connecter'})
 except Exception as e:
     st.error(e)
 
