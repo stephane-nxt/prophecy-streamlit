@@ -14,16 +14,29 @@ import plotly.express as px
 import requests
 
 API_URL = os.environ.get('PROPHECY_API_URL')
-
+RFM_PROPHECY_API_URL = os.environ.get('RFM_PROPHECY_API_URL')
 
 def _svg_to_data_uri(svg_markup: str) -> str:
     """Encode un SVG en data URI — st.html() / DOMPurify supprime les balises <svg> inline."""
     return "data:image/svg+xml," + urllib.parse.quote(svg_markup, safe="")
 
 
+def _kpi_theme_primary_hex() -> str:
+    """Couleur primaire du thème Streamlit pour les icônes KPI (cartes claires / sombres)."""
+    try:
+        theme = getattr(st.context, "theme", None)
+        if theme is not None:
+            c = getattr(theme, "primary_color", None) or getattr(theme, "primaryColor", None)
+            if c:
+                return str(c)
+    except Exception:
+        pass
+    return "#0f5152"
+
+
 def _kpi_icon_html(svg_markup: str) -> str:
-    """Icône KPI via <img> + data URI (couleur fixe lisible sur le dégradé des cartes)."""
-    colored = svg_markup.replace("currentColor", "#BBE1E3")
+    """Icône KPI via <img> + data URI (trait = couleur primaire thème)."""
+    colored = svg_markup.replace("currentColor", _kpi_theme_primary_hex())
     uri = _svg_to_data_uri(colored)
     return (
         '<span class="metric-card-icon">'
@@ -426,7 +439,7 @@ def _reassort_badge_html(text: str, variant: str, badge_kind: str | None = None)
 
 
 def _reassort_cell_html(column_name: str, val) -> str:
-    """Contenu HTML d’une cellule : badges pour les colonnes d’état, sinon texte échappé."""
+    """Contenu HTML d’une cellule : badges pour les colonnes d'état, sinon texte échappé."""
     if column_name == "Date idéale pour commander":
         return html.escape(_reassort_format_date_french(val))
     if column_name == "Etat du stock":
@@ -500,6 +513,17 @@ def get_authenticator():
         config['cookie']['key'],
         config['cookie']['expiry_days'],
     )
+
+def load_segments_rfm():
+    response = requests.get(f'{RFM_PROPHECY_API_URL}/segments')
+    return response.json()
+
+def load_interests_list(min = 10):
+    payload = {
+        'min_clients': min
+    }
+    response = requests.get(f'{RFM_PROPHECY_API_URL}/interests', params=payload)
+    return response.json()
 
 def load_stats():
     response = requests.get(f'{API_URL}/stats')
@@ -576,24 +600,40 @@ def top_data(data, column_name, top_n=None):
 
 
 
-def dashboard(auth):
-    # data = load_data()
+def rfm():
+    data_segments = load_segments_rfm()
+    data_interests = load_interests_list(10)
+    st.html(
+            f"""
+        <div class="custom-header">
+            <div class="header-title">Prophecy</div>
+            <div class="header-value" style="font-size: 28px;">Segmentation RFM & profils</div>
+        </div>
+        """
+    )
+
+    with st.container(border=True):
+        st.markdown("### 📊 Répartition des clients par segment RFM")
+        data_segments_df = pd.DataFrame(data_segments['by_segment'])
+        st.plotly_chart(px.bar(data_segments_df, x='segment', y='count', color='segment'))
+
+    st.divider()
+    with st.container(border=True):
+        default_min_clients = 10
+        
+        min_clients = st.number_input("Minimum de clients", value=default_min_clients, min_value=1, step=1)
+        st.button("Valider", type="primary", on_click=load_interests_list, args=(min_clients,))
+        
+        data_interests = load_interests_list(min_clients)    
+        if len(data_interests) > 0:
+            data_interests_df = pd.DataFrame(data_interests)
+            st.plotly_chart(px.bar(data_interests_df, title=f"Interest list at least {min_clients} clients", x='interest', y='count', color='interest'))
+        else:
+            st.error("No interests data found")
+
+def dashboard():
     data_stats = load_stats()
     data_categories = load_categories()
-    logo_path = 'img/prophecy_logo.png'
-    
-    with st.sidebar:
-        if os.path.exists(logo_path):
-            st.image(logo_path, width='content')
-        else:
-            st.title("Prophecy")
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.divider()
-        st.button("Dashboard", type="primary", icon=":material/dashboard:")
-        st.divider()
-        auth.logout()
-        
-
     st.html(
             f"""
         <div class="custom-header">
@@ -661,7 +701,42 @@ except Exception as e:
     st.error(e)
 
 if st.session_state.get('authentication_status'):
-    dashboard(auth)
+    logo_path = 'img/prophecy_logo.png'
+    dashboard_page = st.Page(
+        dashboard,
+        title="Tableau de bord",
+        icon=":material/dashboard:",
+        default=True,
+    )
+    rfm_page = st.Page(
+        rfm,
+        title="Segmentation RFM",
+        icon=":material/segment:",
+    )
+    pg = st.navigation([dashboard_page, rfm_page], position="hidden")
+
+    with st.sidebar:
+        if os.path.exists(logo_path):
+            st.image(logo_path, width='content')
+        else:
+            st.title("Prophecy")
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.divider()
+        st.page_link(
+            dashboard_page,
+            label="Tableau de bord",
+            icon=":material/dashboard:",
+            width="stretch",
+        )
+        st.page_link(
+            rfm_page,
+            label="Segmentation RFM",
+            icon=":material/segment:",
+            width="stretch",
+        )
+        auth.logout("Déconnexion", use_container_width=True)
+
+    pg.run()
 elif st.session_state.get('authentication_status') is False:
     st.error('Username/password is incorrect')
 elif st.session_state.get('authentication_status') is None:
