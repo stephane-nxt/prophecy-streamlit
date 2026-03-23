@@ -104,6 +104,16 @@ def _fmt_percent(n, decimals: int = 2) -> str:
         return str(n)
 
 
+def _fmt_number_fr(n, decimals: int = 0) -> str:
+    try:
+        value = float(n)
+    except (TypeError, ValueError):
+        return str(n)
+    if decimals <= 0:
+        return f"{int(round(value)):,}".replace(",", " ")
+    return f"{value:,.{decimals}f}".replace(",", " ").replace(".", ",")
+
+
 def _rfm_kpis_section_html(kpis: dict) -> str:
     cards = [
         _rfm_kpi_card_html(
@@ -220,6 +230,42 @@ def _interests_dataframe(payload) -> pd.DataFrame:
     return df
 
 
+def _inject_rfm_table_css() -> None:
+    st.markdown(
+        """
+        <style>
+        .rfm-table-scroll {
+            max-height: 388px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+        }
+        .rfm-table-scroll table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .rfm-table-scroll thead th {
+            position: sticky;
+            top: 0;
+            background: #f9fafb;
+            z-index: 2;
+            white-space: nowrap;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .rfm-table-scroll th,
+        .rfm-table-scroll td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.92rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def rfm():
     data_segments = load_segments_rfm()
     data_rfm_kpis = load_rfm_dashboard_kpis()
@@ -317,7 +363,6 @@ def rfm():
         if interests_df.empty:
             st.info("Pas de données d'intérêts par segment disponibles.")
         else:
-            # Top N global (tous segments confondus) pour respecter exactement la valeur du filtre.
             top_interest_names = (
                 interests_df.groupby("interest", as_index=False)["count"]
                 .sum()
@@ -351,7 +396,7 @@ def rfm():
     st.markdown("### Ciblage client")
 
     segment_options = sorted(seg_df["segment"].tolist()) if by_segment else []
-    interest_options = sorted(interests_df["interest"].unique().tolist()) if not interests_df.empty else []
+    interest_options = sorted(interests_df["interest"].unique().tolist()) if "interests_df" in locals() and not interests_df.empty else []
 
     with st.container():
         f1, f2, f3, f4 = st.columns(4, gap="small")
@@ -360,22 +405,15 @@ def rfm():
         with f2:
             selected_interests = st.multiselect("Intérêts", options=interest_options, placeholder="Tous")
         with f3:
-            b2b_mode = st.selectbox(
-                "Tag B2B",
-                options=["Tous", "B2B uniquement", "Non B2B"],
-                index=0,
-            )
+            b2b_mode = st.selectbox("Client B2B", options=["Tous", "B2B uniquement", "Non B2B"], index=0)
         with f4:
             name_contains = st.text_input("Nom client contient", value="", placeholder="Ex: RAKOTO")
 
-        p1, p2, p3 = st.columns([1, 1, 2], gap="small")
+        p1, p2, _ = st.columns([1, 1, 2], gap="small")
         with p1:
             limit = st.number_input("Limite", min_value=1, value=100, step=50)
         with p2:
             offset = st.number_input("Décalage", min_value=0, value=0, step=50)
-        with p3:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.caption("Filtres appliqués automatiquement")
 
     tag_b2b = None
     if b2b_mode == "B2B uniquement":
@@ -399,8 +437,40 @@ def rfm():
         st.info("Aucun client trouvé pour ces filtres.")
     else:
         df_customers = pd.DataFrame(customers)
-        hidden_columns = {"partner_id"}
-        visible_columns = [c for c in df_customers.columns if c not in hidden_columns]
-        df_customers = df_customers[visible_columns]
+        column_mapping = {
+            "partner_name": "Client",
+            "segment": "Segment RFM",
+            "Tag_B2B": "Client B2B",
+            "Tag_Christmas_Shopper": "Acheteur Noël",
+            "Tag_Holidays_Shopper": "Acheteur saisonnier",
+            "Tag_Interest": "Intérêt principal",
+            "recency_days": "Dernier achat (jours)",
+            "frequency": "Fréquence d’achat",
+            "monetary": "Chiffre d’affaires",
+            "last_purchase": "Date dernier achat",
+        }
+        available_columns = [col for col in column_mapping if col in df_customers.columns]
+        df_customers = df_customers[available_columns].rename(columns=column_mapping)
+        bool_columns = ["Client B2B", "Acheteur Noël", "Acheteur saisonnier"]
+        for bool_col in bool_columns:
+            if bool_col in df_customers.columns:
+                df_customers[bool_col] = df_customers[bool_col].map({True: "Oui", False: "Non"}).fillna("Non")
+        fr_number_columns = {
+            "Dernier achat (jours)": 0,
+            "Fréquence d’achat": 0,
+            "Chiffre d’affaires": 2,
+        }
+        numeric_display_cols = []
+        for col_name, decimals in fr_number_columns.items():
+            if col_name in df_customers.columns:
+                numeric_display_cols.append(col_name)
+                df_customers[col_name] = df_customers[col_name].apply(lambda x, d=decimals: _fmt_number_fr(x, d))
+
+        _inject_rfm_table_css()
+        styled_df = df_customers.style.hide(axis="index")
+        if numeric_display_cols:
+            styled_df = styled_df.set_properties(subset=numeric_display_cols, **{"text-align": "right"})
+
         st.caption(f"{_fmt_grouped_int(total)} clients au total")
-        st.dataframe(df_customers, use_container_width=True, hide_index=True)
+        table_html = styled_df.to_html()
+        st.markdown(f'<div class="rfm-table-scroll">{table_html}</div>', unsafe_allow_html=True)
