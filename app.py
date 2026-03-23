@@ -524,7 +524,7 @@ def _reassort_dataframe_html(df: pd.DataFrame, stock_color_map: dict[str, str] |
     return f"""
 <div class="reassort-wrap" role="region" aria-label="Résultats réassort">
   <div class="reassort-x-scroll">
-    <table border="1" class="reassort-table">
+    <table class="reassort-table">
       <thead><tr>{thead_cells}</tr></thead>
       <tbody>{"".join(tbody_rows)}</tbody>
     </table>
@@ -720,7 +720,7 @@ def dashboard():
     with st.container(border=True):
         with st.container():
             data_grouped_reassort_dict = data_stats['alerts']
-            # Convert the dict to a list of dicts suitable for plotly express
+            
             data_grouped_reassort = [
                 {"alert": key, "qty_to_order": value}
                 for key, value in data_grouped_reassort_dict.items()
@@ -742,6 +742,7 @@ def dashboard():
                 }
             )
             fig.update_layout(showlegend=False)
+            st.plotly_chart(fig)
     
     with open("img/reassort_icon.png", "rb") as image_file:
         encoded = base64.b64encode(image_file.read()).decode()
