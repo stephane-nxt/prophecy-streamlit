@@ -4,6 +4,20 @@
     --reassort-table-border: #e7e3e4;
 }
 
+/* Ajustement du positionnement global sous la navbar Streamlit */
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewContainer"] .main .block-container,
+[data-testid="stAppViewContainer"] [data-testid="stMain"] .block-container {
+    padding-top: 1.5rem !important;
+}
+@media (max-width: 900px) {
+    [data-testid="stMainBlockContainer"],
+    [data-testid="stAppViewContainer"] .main .block-container,
+    [data-testid="stAppViewContainer"] [data-testid="stMain"] .block-container {
+        padding-top: 1.3rem !important;
+    }
+}
+
 /* Blocs Prophecy injectés (st.html) : police alignée sur le thème Streamlit */
 .custom-header,
 .kpi-grid,
@@ -187,7 +201,7 @@
 
 /* Bandeau titre de page uniquement (pas les cartes KPI .metric-card) : remonte sous la barre Streamlit */
 .custom-header:not(.metric-card) {
-    margin-top: -1.25rem;
+    margin-top: -0.35rem;
 }
 .header-title {
     font-size: 15px;

@@ -739,7 +739,8 @@ def dashboard():
                 labels={
                     "alert": "Etat du stock",
                     "qty_to_order": "Quantité à commander",
-                }
+                },
+                title="Etat de stock sur 30 jours"
             )
             fig.update_layout(showlegend=False)
             st.plotly_chart(fig)
