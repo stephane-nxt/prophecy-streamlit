@@ -700,7 +700,7 @@ def dashboard():
             f"""
         <div class="custom-header">
             <div class="header-title">Prophecy</div>
-            <div class="header-value" style="font-size: 28px;">Tableau de bord intelligent</div>
+            <div class="header-value" style="font-size: 28px;">Tableau de bord</div>
         </div>
         """
     )

@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --reassort-table-border: #767676;
+    --reassort-table-border: #e7e3e4;
 }
 
 /* Blocs Prophecy injectés (st.html) : police alignée sur le thème Streamlit */
@@ -107,7 +107,7 @@
     box-sizing: border-box;
     background: var(--st-secondary-background-color);
     color: var(--st-text-color);
-    border: 1.5px solid var(--reassort-table-border);
+    border: 0.5px solid var(--reassort-table-border);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--st-primary-color) 12%, transparent) inset,
         0 2px 6px color-mix(in srgb, var(--st-text-color) 8%, transparent),
         0 8px 20px color-mix(in srgb, var(--st-text-color) 6%, transparent);
@@ -126,7 +126,7 @@
     font-size: clamp(1.35rem, 1rem + 2.2vw, 2rem);
     line-height: 1.2;
     letter-spacing: -0.4px;
-    color: var(--st-text-color);
+    color: var(--st-primary-color, #0f5152) !important;
 }
 .metric-card-icon {
     display: inline-flex;
@@ -220,7 +220,7 @@
     max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    border: 2px solid var(--reassort-table-border);
+    border: 0.5px solid var(--reassort-table-border);
     border-radius: var(--st-base-radius, 12px);
     overflow: hidden;
 }
@@ -249,7 +249,7 @@
     table-layout: auto;
     width: max-content;
     min-width: 100%;
-    border: 1px solid var(--reassort-table-border);
+    border: 0.5px solid var(--reassort-table-border);
 }
 .reassort-table thead {
     position: sticky;
@@ -269,8 +269,8 @@
         #ffffff
     ) !important;
     white-space: nowrap;
-    border-right: 1px solid var(--reassort-table-border);
-    border-bottom: 2px solid var(--reassort-table-border);
+    border-right: 0.5px solid var(--reassort-table-border);
+    border-bottom: 0.5px solid var(--reassort-table-border);
     background-clip: padding-box;
     box-shadow: none;
 }
@@ -283,8 +283,8 @@
 }
 .reassort-table tbody td {
     padding: 10px 12px;
-    border-right: 1px solid var(--reassort-table-border);
-    border-bottom: 1px solid var(--reassort-table-border);
+    border-right: 0.5px solid var(--reassort-table-border);
+    border-bottom: 0.5px solid var(--reassort-table-border);
     vertical-align: middle;
     background-color: var(--st-secondary-background-color);
     overflow-wrap: anywhere;
