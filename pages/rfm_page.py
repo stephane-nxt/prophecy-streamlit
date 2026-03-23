@@ -247,6 +247,25 @@ def _inject_rfm_table_css() -> None:
             justify-content: flex-end !important;
             width: 100% !important;
         }
+        /* Alignement a droite force pour colonnes numeriques (4,5,6) */
+        [data-testid="stDataFrame"] [role="columnheader"][aria-colindex="4"],
+        [data-testid="stDataFrame"] [role="columnheader"][aria-colindex="5"],
+        [data-testid="stDataFrame"] [role="columnheader"][aria-colindex="6"],
+        [data-testid="stDataFrame"] [role="columnheader"][aria-colindex="4"] *,
+        [data-testid="stDataFrame"] [role="columnheader"][aria-colindex="5"] *,
+        [data-testid="stDataFrame"] [role="columnheader"][aria-colindex="6"] * {
+            text-align: right !important;
+            justify-content: flex-end !important;
+        }
+        [data-testid="stDataFrame"] [role="gridcell"][aria-colindex="4"],
+        [data-testid="stDataFrame"] [role="gridcell"][aria-colindex="5"],
+        [data-testid="stDataFrame"] [role="gridcell"][aria-colindex="6"],
+        [data-testid="stDataFrame"] [role="gridcell"][aria-colindex="4"] *,
+        [data-testid="stDataFrame"] [role="gridcell"][aria-colindex="5"] *,
+        [data-testid="stDataFrame"] [role="gridcell"][aria-colindex="6"] * {
+            text-align: right !important;
+            justify-content: flex-end !important;
+        }
         .rfm-table-scroll {
             max-height: 388px;
             overflow-y: auto;
@@ -272,6 +291,12 @@ def _inject_rfm_table_css() -> None:
             padding: 8px 10px;
             border-bottom: 1px solid #f1f5f9;
             font-size: 0.92rem;
+        }
+        .rfm-table-scroll tbody td:nth-child(4),
+        .rfm-table-scroll tbody td:nth-child(5),
+        .rfm-table-scroll tbody td:nth-child(6) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
         }
         </style>
         """,
@@ -499,7 +524,7 @@ def rfm():
         for col_name, decimals in fr_number_columns.items():
             if col_name in df_customers.columns:
                 numeric_display_cols.append(col_name)
-                df_customers[col_name] = df_customers[col_name].apply(lambda x, d=decimals: _fmt_number_fr(x, d))
+                df_customers[col_name] = pd.to_numeric(df_customers[col_name], errors="coerce")
 
         _inject_rfm_table_css()
         total_slot.markdown(
@@ -510,4 +535,15 @@ def rfm():
         row_height = 35
         header_height = 38
         table_height = header_height + (10 * row_height)
-        st.dataframe(df_customers, use_container_width=True, hide_index=True, height=table_height)
+        styled_df = df_customers.style
+        if numeric_display_cols:
+            formatters = {
+                col: (lambda v, d=fr_number_columns[col]: _fmt_number_fr(v, d))
+                for col in numeric_display_cols
+            }
+            styled_df = (
+                styled_df
+                .format(formatters)
+                .set_properties(subset=numeric_display_cols, **{"text-align": "right"})
+            )
+        st.dataframe(styled_df, use_container_width=True, hide_index=True, height=table_height)
