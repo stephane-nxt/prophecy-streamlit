@@ -320,3 +320,6 @@ def rfm():
                 legend_title_text="Intérêt",
             )
             st.plotly_chart(grouped_fig, use_container_width=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### Ciblage client")
