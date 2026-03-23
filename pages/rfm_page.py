@@ -165,21 +165,21 @@ def load_segment_interests(top_n: int = 3):
 
 
 def load_rfm_customers(
-    segments=None,
+    segment=None,
     tag_b2b=None,
     tag_christmas=None,
     tag_holidays=None,
-    interests=None,
+    interest=None,
     partner_name_contains=None,
     limit=100,
     offset=0,
 ):
     params = {
-        "segments": segments,
+        "segment": segment,
         "tag_b2b": tag_b2b,
         "tag_christmas": tag_christmas,
         "tag_holidays": tag_holidays,
-        "interests": interests,
+        "interest": interest,
         "partner_name_contains": partner_name_contains,
         "limit": limit,
         "offset": offset,
@@ -234,6 +234,19 @@ def _inject_rfm_table_css() -> None:
     st.markdown(
         """
         <style>
+        [data-testid="stPopoverButton"] {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            white-space: nowrap !important;
+            min-width: fit-content !important;
+            padding: 0 !important;
+        }
+        [data-testid="stPopover"] {
+            display: flex !important;
+            justify-content: flex-end !important;
+            width: 100% !important;
+        }
         .rfm-table-scroll {
             max-height: 388px;
             overflow-y: auto;
@@ -395,36 +408,58 @@ def rfm():
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### Ciblage client")
 
-    segment_options = sorted(seg_df["segment"].tolist()) if by_segment else []
-    interest_options = sorted(interests_df["interest"].unique().tolist()) if "interests_df" in locals() and not interests_df.empty else []
+    segment_options = sorted(seg_df["segment"].dropna().unique().tolist()) if by_segment else []
+    interest_options = sorted(
+        interests_df["interest"].dropna().unique().tolist()
+    ) if "interests_df" in locals() and not interests_df.empty else []
 
-    with st.container():
-        f1, f2, f3, f4 = st.columns(4, gap="small")
+    with st.container(border=True):
+        f1, f2, f3 = st.columns(3, gap="small")
         with f1:
-            selected_segments = st.multiselect("Segments", options=segment_options, placeholder="Tous")
+            selected_segment = st.selectbox(
+                "Segment",
+                options=["Tous"] + segment_options,
+                index=0,
+                help="Sélection unique, recherche possible au clavier.",
+            )
         with f2:
-            selected_interests = st.multiselect("Intérêts", options=interest_options, placeholder="Tous")
+            selected_interest = st.selectbox(
+                "Intérêt",
+                options=["Tous"] + interest_options,
+                index=0,
+                help="Sélection unique, recherche possible au clavier.",
+            )
         with f3:
-            b2b_mode = st.selectbox("Client B2B", options=["Tous", "B2B uniquement", "Non B2B"], index=0)
-        with f4:
             name_contains = st.text_input("Nom client contient", value="", placeholder="Ex: RAKOTO")
 
-        p1, p2, _ = st.columns([1, 1, 2], gap="small")
-        with p1:
-            limit = st.number_input("Limite", min_value=1, value=100, step=50)
-        with p2:
-            offset = st.number_input("Décalage", min_value=0, value=0, step=50)
+    filter_b2b = False
+    filter_noel = False
+    filter_saisonnier = False
+    limit = 100
+    offset = 0
 
-    tag_b2b = None
-    if b2b_mode == "B2B uniquement":
-        tag_b2b = True
-    elif b2b_mode == "Non B2B":
-        tag_b2b = False
+    st.markdown("<div style='height:3px;'></div>", unsafe_allow_html=True)
+    meta_left, meta_right = st.columns([9, 2], gap="small")
+    with meta_left:
+        total_slot = st.empty()
+    with meta_right:
+        with st.popover("Plus de filtre", use_container_width=True):
+            filter_b2b = st.checkbox("Client B2B", value=False, key="rfm_filter_b2b")
+            filter_noel = st.checkbox("Acheteur Noël", value=False, key="rfm_filter_noel")
+            filter_saisonnier = st.checkbox("Acheteur saisonnier", value=False, key="rfm_filter_saisonnier")
+            limit = st.number_input("Limite", min_value=1, value=100, step=50, key="rfm_limit")
+            offset = st.number_input("Décalage", min_value=0, value=0, step=50, key="rfm_offset")
+
+    tag_b2b = True if filter_b2b else None
+    tag_christmas = True if filter_noel else None
+    tag_holidays = True if filter_saisonnier else None
 
     customers_payload = load_rfm_customers(
-        segments=selected_segments or None,
-        interests=selected_interests or None,
+        segment=None if selected_segment == "Tous" else selected_segment,
+        interest=None if selected_interest == "Tous" else selected_interest,
         tag_b2b=tag_b2b,
+        tag_christmas=tag_christmas,
+        tag_holidays=tag_holidays,
         partner_name_contains=name_contains.strip() or None,
         limit=int(limit),
         offset=int(offset),
@@ -440,14 +475,14 @@ def rfm():
         column_mapping = {
             "partner_name": "Client",
             "segment": "Segment RFM",
-            "Tag_B2B": "Client B2B",
-            "Tag_Christmas_Shopper": "Acheteur Noël",
-            "Tag_Holidays_Shopper": "Acheteur saisonnier",
             "Tag_Interest": "Intérêt principal",
             "recency_days": "Dernier achat (jours)",
             "frequency": "Fréquence d’achat",
             "monetary": "Chiffre d’affaires",
             "last_purchase": "Date dernier achat",
+            "Tag_B2B": "Client B2B",
+            "Tag_Christmas_Shopper": "Acheteur Noël",
+            "Tag_Holidays_Shopper": "Acheteur saisonnier",
         }
         available_columns = [col for col in column_mapping if col in df_customers.columns]
         df_customers = df_customers[available_columns].rename(columns=column_mapping)
@@ -467,10 +502,12 @@ def rfm():
                 df_customers[col_name] = df_customers[col_name].apply(lambda x, d=decimals: _fmt_number_fr(x, d))
 
         _inject_rfm_table_css()
-        styled_df = df_customers.style.hide(axis="index")
-        if numeric_display_cols:
-            styled_df = styled_df.set_properties(subset=numeric_display_cols, **{"text-align": "right"})
-
-        st.caption(f"{_fmt_grouped_int(total)} clients au total")
-        table_html = styled_df.to_html()
-        st.markdown(f'<div class="rfm-table-scroll">{table_html}</div>', unsafe_allow_html=True)
+        total_slot.markdown(
+            f"<div style='margin:0; padding-top:2px; line-height:1.1;'>{_fmt_grouped_int(total)} clients au total</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("<div style='height:0; margin:0; padding:0;'></div>", unsafe_allow_html=True)
+        row_height = 35
+        header_height = 38
+        table_height = header_height + (10 * row_height)
+        st.dataframe(df_customers, use_container_width=True, hide_index=True, height=table_height)
