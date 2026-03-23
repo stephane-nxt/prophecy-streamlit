@@ -431,7 +431,7 @@ def rfm():
             st.plotly_chart(grouped_fig, use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### Ciblage client")
+    st.markdown("### Liste clients stratégiques")
 
     segment_options = sorted(seg_df["segment"].dropna().unique().tolist()) if by_segment else []
     interest_options = sorted(
