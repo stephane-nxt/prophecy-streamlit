@@ -345,7 +345,7 @@ def rfm():
 
         with col1:
             with st.container(border=True):
-                st.markdown("### 💰 CA par segment")
+                st.markdown("#### CA par segment")
                 if not ca_df.empty:
                     fig_bar_ca = px.bar(
                         ca_df,
@@ -369,7 +369,7 @@ def rfm():
 
         with col2:
             with st.container(border=True):
-                st.markdown("### 👥 Clients par segment")
+                st.markdown("#### Clients par segment")
                 fig_donut = px.pie(
                     seg_df,
                     names="segment",
@@ -391,7 +391,7 @@ def rfm():
     with st.container(border=True):
         col_title, col_filter = st.columns([4, 1], gap="small")
         with col_title:
-            st.markdown("### 🎁 Intérêts Majeurs par Segment")
+            st.markdown("#### Intérêts Majeurs par Segment")
         with col_filter:
             top_n = st.number_input("Top", min_value=1, max_value=10, value=3, step=1, key="rfm_top_interests")
 
