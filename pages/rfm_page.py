@@ -37,41 +37,12 @@ def _kpi_icon_html(svg_markup: str) -> str:
 
 
 _KPI_SVG = {
-    "users": (
+    "trending_up": (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>'
-        '<circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/>'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/>'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
-    ),
-    "money": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
-        '<rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" '
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
-        '<circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M6 10h.01M18 14h.01"/></svg>'
-    ),
-    "badge_trend": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M12 3l2.4 2.2 3.2-.2 1.4 2.9 2.8 1.6-.6 3.1 1.4 2.8-2.4 2.2-.2 3.2-2.9 1.4-1.6 2.8-3.1-.6-2.8 1.4-2.2-2.4-3.2-.2-1.4-2.9-2.8-1.6.6-3.1-1.4-2.8 2.4-2.2.2-3.2 2.9-1.4 1.6-2.8z"/>'
         '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" points="8 14 11 11 13 13 16 10"/>'
+        'stroke-linejoin="round" points="22 7 13.5 15.5 8.5 10.5 2 17"/>'
         '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" points="14.5 10 16 10 16 11.5"/></svg>'
-    ),
-    "package": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'
-        '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" points="3.27 6.96 12 12.01 20.73 6.96"/>'
-        '<line x1="12" x2="12" y1="22.08" y2="12" fill="none" stroke="currentColor" '
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        'stroke-linejoin="round" points="16 7 22 7 22 13"/></svg>'
     ),
     "cart": (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
@@ -79,21 +50,6 @@ _KPI_SVG = {
         '<circle cx="19" cy="21" r="1" fill="none" stroke="currentColor" stroke-width="2"/>'
         '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
         'stroke-linejoin="round" d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.72a2 2 0 0 0 1.95-1.57l1.65-9.15H5.12"/></svg>'
-    ),
-    "euro": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M4 10h12"/><path fill="none" stroke="currentColor" '
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 14h9"/>'
-        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" d="M19 6a7.7 7.7 0 0 0-5.2-2A7.5 7.5 0 0 0 6 20h13"/></svg>'
-    ),
-    "trending_up": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
-        '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" points="22 7 13.5 15.5 8.5 10.5 2 17"/>'
-        '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-        'stroke-linejoin="round" points="16 7 22 7 22 13"/></svg>'
     ),
 }
 
@@ -191,12 +147,6 @@ def load_rfm_dashboard_kpis():
     return {}
 
 
-def load_interests_list(min_clients=10):
-    payload = {"min_clients": min_clients}
-    response = requests.get(f"{RFM_PROPHECY_API_URL}/interests", params=payload)
-    return response.json()
-
-
 def rfm():
     data_segments = load_segments_rfm()
     data_rfm_kpis = load_rfm_dashboard_kpis()
@@ -248,13 +198,14 @@ def rfm():
                         color_discrete_sequence=segment_palette,
                         labels={"segment": "Segment", "ca": "Chiffre d'affaires"},
                     )
-                    fig_bar_ca.update_layout(showlegend=False, margin={"l": 10, "r": 10, "t": 20, "b": 10})
-                    st.plotly_chart(fig_bar_ca, use_container_width=True)
-
-                    top_ca = ca_df.iloc[0]
-                    st.caption(
-                        f"Top CA: **{top_ca['segment']}** ({_fmt_money_ar(top_ca['ca'])})."
+                    fig_bar_ca.update_layout(
+                        title_text="",
+                        showlegend=False,
+                        margin={"l": 10, "r": 10, "t": 20, "b": 10},
                     )
+                    st.plotly_chart(fig_bar_ca, use_container_width=True)
+                    top_ca = ca_df.iloc[0]
+                    st.caption(f"Top CA: **{top_ca['segment']}** ({_fmt_money_ar(top_ca['ca'])}).")
                 else:
                     st.info("Aucune donnée de CA par segment.")
 
@@ -270,9 +221,8 @@ def rfm():
                     color_discrete_sequence=segment_palette,
                 )
                 fig_donut.update_traces(textposition="inside", texttemplate="%{percent:.1%}")
-                fig_donut.update_layout(margin={"l": 10, "r": 10, "t": 20, "b": 10})
+                fig_donut.update_layout(title_text="", margin={"l": 10, "r": 10, "t": 20, "b": 10})
                 st.plotly_chart(fig_donut, use_container_width=True)
-
                 top_row = seg_df.iloc[0]
                 st.caption(
                     f"Segment dominant: **{top_row['segment']}** "
