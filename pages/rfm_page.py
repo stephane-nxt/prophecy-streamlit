@@ -154,6 +154,32 @@ def load_segment_interests(top_n: int = 3):
     return {}
 
 
+def load_rfm_customers(
+    segments=None,
+    tag_b2b=None,
+    tag_christmas=None,
+    tag_holidays=None,
+    interests=None,
+    partner_name_contains=None,
+    limit=100,
+    offset=0,
+):
+    params = {
+        "segments": segments,
+        "tag_b2b": tag_b2b,
+        "tag_christmas": tag_christmas,
+        "tag_holidays": tag_holidays,
+        "interests": interests,
+        "partner_name_contains": partner_name_contains,
+        "limit": limit,
+        "offset": offset,
+    }
+    response = requests.get(f"{RFM_PROPHECY_API_URL}/customers", params=params)
+    if response.status_code == 200:
+        return response.json()
+    return {"items": [], "total": 0, "limit": limit, "offset": offset}
+
+
 def _segment_interest_rows(segments) -> list[dict]:
     rows = []
     for seg in segments:
@@ -323,3 +349,58 @@ def rfm():
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### Ciblage client")
+
+    segment_options = sorted(seg_df["segment"].tolist()) if by_segment else []
+    interest_options = sorted(interests_df["interest"].unique().tolist()) if not interests_df.empty else []
+
+    with st.container():
+        f1, f2, f3, f4 = st.columns(4, gap="small")
+        with f1:
+            selected_segments = st.multiselect("Segments", options=segment_options, placeholder="Tous")
+        with f2:
+            selected_interests = st.multiselect("Intérêts", options=interest_options, placeholder="Tous")
+        with f3:
+            b2b_mode = st.selectbox(
+                "Tag B2B",
+                options=["Tous", "B2B uniquement", "Non B2B"],
+                index=0,
+            )
+        with f4:
+            name_contains = st.text_input("Nom client contient", value="", placeholder="Ex: RAKOTO")
+
+        p1, p2, p3 = st.columns([1, 1, 2], gap="small")
+        with p1:
+            limit = st.number_input("Limite", min_value=1, value=100, step=50)
+        with p2:
+            offset = st.number_input("Décalage", min_value=0, value=0, step=50)
+        with p3:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.caption("Filtres appliqués automatiquement")
+
+    tag_b2b = None
+    if b2b_mode == "B2B uniquement":
+        tag_b2b = True
+    elif b2b_mode == "Non B2B":
+        tag_b2b = False
+
+    customers_payload = load_rfm_customers(
+        segments=selected_segments or None,
+        interests=selected_interests or None,
+        tag_b2b=tag_b2b,
+        partner_name_contains=name_contains.strip() or None,
+        limit=int(limit),
+        offset=int(offset),
+    )
+
+    customers = customers_payload.get("items", []) if isinstance(customers_payload, dict) else []
+    total = customers_payload.get("total", 0) if isinstance(customers_payload, dict) else 0
+
+    if not customers:
+        st.info("Aucun client trouvé pour ces filtres.")
+    else:
+        df_customers = pd.DataFrame(customers)
+        hidden_columns = {"partner_id"}
+        visible_columns = [c for c in df_customers.columns if c not in hidden_columns]
+        df_customers = df_customers[visible_columns]
+        st.caption(f"{_fmt_grouped_int(total)} clients au total")
+        st.dataframe(df_customers, use_container_width=True, hide_index=True)
