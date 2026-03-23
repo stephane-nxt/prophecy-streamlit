@@ -12,6 +12,7 @@ from yaml.loader import SafeLoader
 import os
 import plotly.express as px
 import requests
+import base64
 
 API_URL = os.environ.get('PROPHECY_API_URL')
 RFM_PROPHECY_API_URL = os.environ.get('RFM_PROPHECY_API_URL')
@@ -423,7 +424,12 @@ def _reassort_badge_icon_markup(variant: str, badge_kind: str) -> str:
     )
 
 
-def _reassort_badge_html(text: str, variant: str, badge_kind: str | None = None) -> str:
+def _reassort_badge_html(
+    text: str,
+    variant: str,
+    badge_kind: str | None = None,
+    inline_style: str | None = None,
+) -> str:
     esc = html.escape(text.strip() if text else "")
     safe_variant = variant if variant in {
         "destructive", "warning", "success", "default", "secondary",
@@ -432,13 +438,43 @@ def _reassort_badge_html(text: str, variant: str, badge_kind: str | None = None)
     icon_html = ""
     if badge_kind in ("stock", "cycle"):
         icon_html = _reassort_badge_icon_markup(safe_variant, badge_kind)
+    style_attr = f' style="{inline_style}"' if inline_style else ""
     return (
-        f'<span class="reassort-badge reassort-badge--{safe_variant}">'
+        f'<span class="reassort-badge reassort-badge--{safe_variant}"{style_attr}>'
         f'{icon_html}<span class="reassort-badge-label">{esc}</span></span>'
     )
 
 
-def _reassort_cell_html(column_name: str, val) -> str:
+def _hex_text_color(hex_color: str) -> str:
+    """Choisit automatiquement une couleur de texte avec meilleur contraste WCAG."""
+    h = (hex_color or "").strip().lstrip("#")
+    if len(h) != 6:
+        return "#111827"
+    try:
+        r = int(h[0:2], 16) / 255.0
+        g = int(h[2:4], 16) / 255.0
+        b = int(h[4:6], 16) / 255.0
+    except ValueError:
+        return "#111827"
+
+    def _srgb_to_linear(c: float) -> float:
+        if c <= 0.03928:
+            return c / 12.92
+        return ((c + 0.055) / 1.055) ** 2.4
+
+    l_bg = (
+        (0.2126 * _srgb_to_linear(r))
+        + (0.7152 * _srgb_to_linear(g))
+        + (0.0722 * _srgb_to_linear(b))
+    )
+    l_dark = 0.0      # ~ noir
+    l_light = 1.0     # blanc
+    contrast_dark = (max(l_bg, l_dark) + 0.05) / (min(l_bg, l_dark) + 0.05)
+    contrast_light = (max(l_bg, l_light) + 0.05) / (min(l_bg, l_light) + 0.05)
+    return "#111827" if contrast_dark >= contrast_light else "#ffffff"
+
+
+def _reassort_cell_html(column_name: str, val, stock_color_map: dict[str, str] | None = None) -> str:
     """Contenu HTML d’une cellule : badges pour les colonnes d'état, sinon texte échappé."""
     if column_name == "Date idéale pour commander":
         return html.escape(_reassort_format_date_french(val))
@@ -447,6 +483,15 @@ def _reassort_cell_html(column_name: str, val) -> str:
         if s == "—":
             return s
         v = _reassort_stock_badge_variant(val)
+        custom_bg = stock_color_map.get(s) if stock_color_map else None
+        if custom_bg:
+            text_color = _hex_text_color(custom_bg)
+            return _reassort_badge_html(
+                s,
+                v,
+                badge_kind="stock",
+                inline_style=f"background: {custom_bg}; color: {text_color};",
+            )
         return _reassort_badge_html(s, v, badge_kind="stock")
     if column_name == "Etat de l'article":
         s = _reassort_scalar_str(val)
@@ -457,7 +502,7 @@ def _reassort_cell_html(column_name: str, val) -> str:
     return html.escape(_reassort_scalar_str(val))
 
 
-def _reassort_dataframe_html(df: pd.DataFrame) -> str:
+def _reassort_dataframe_html(df: pd.DataFrame, stock_color_map: dict[str, str] | None = None) -> str:
     """Un seul <table> (thead + tbody) : colonnes alignées par le moteur HTML, scroll dans le conteneur."""
     cols = list(df.columns)
     thead_cells = "".join(f"<th scope='col'>{html.escape(c)}</th>" for c in cols)
@@ -465,13 +510,13 @@ def _reassort_dataframe_html(df: pd.DataFrame) -> str:
     cards: list[str] = []
     for _, row in df.iterrows():
         cells = "".join(
-            f"<td>{_reassort_cell_html(c, row[c])}</td>" for c in cols
+            f"<td>{_reassort_cell_html(c, row[c], stock_color_map=stock_color_map)}</td>" for c in cols
         )
         tbody_rows.append(f"<tr>{cells}</tr>")
         card_inner = "".join(
             f'<div class="reassort-card-row">'
             f'<span class="reassort-card-label">{html.escape(c)}</span>'
-            f'<span class="reassort-card-value">{_reassort_cell_html(c, row[c])}</span>'
+            f'<span class="reassort-card-value">{_reassort_cell_html(c, row[c], stock_color_map=stock_color_map)}</span>'
             f"</div>"
             for c in cols
         )
@@ -680,7 +725,7 @@ def dashboard():
                 {"alert": key, "qty_to_order": value}
                 for key, value in data_grouped_reassort_dict.items()
             ]
-            base_colors = ['#025864', '#00d47e', '#f4c095', '#ee2e31', '#63474d', '#535cc2', '#f97316', '#0891b2']
+            base_colors = ['#025864', '#00d47e', '#f4c095', '#ee2e31', '#63474d']
             alert_to_color = {
                 row["alert"]: base_colors[i % len(base_colors)]
                 for i, row in enumerate(data_grouped_reassort)
@@ -697,8 +742,14 @@ def dashboard():
                 }
             )
             fig.update_layout(showlegend=False)
-            st.plotly_chart(fig)
-    st.markdown("### 📦 Recommandations d'approvisionnement")
+    
+    with open("img/reassort_icon.png", "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode()
+    img_tag = f'<img src="data:image/png;base64,{encoded}" width="28" style="vertical-align:middle; margin-right:10px;"/>'
+    st.markdown(
+        f"### {img_tag} Recommandations d'approvisionnement",
+        unsafe_allow_html=True
+    )
     with st.container():
         category_selected = st.selectbox("Filtrer par catégorie", placeholder="Choisir une catégorie", options=[category['category'] for category in data_categories], index=None)
         col_1_1, col_1_2, col_1_3 = st.columns(3)
@@ -723,7 +774,7 @@ def dashboard():
             if category_selected is not None:
                 category_id = [category['category_id'] for category in data_categories if category['category'] == category_selected][0]
         if len(data_reassort) > 0:
-            st.html(_reassort_dataframe_html(data_reassort))
+            st.html(_reassort_dataframe_html(data_reassort, stock_color_map=alert_to_color))
         else:
             st.error("Pas de recommandations d'approvisionnement trouvées")
             
