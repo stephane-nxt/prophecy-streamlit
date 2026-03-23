@@ -460,7 +460,7 @@ def _reassort_cell_html(column_name: str, val) -> str:
 def _reassort_dataframe_html(df: pd.DataFrame) -> str:
     """Un seul <table> (thead + tbody) : colonnes alignées par le moteur HTML, scroll dans le conteneur."""
     cols = list(df.columns)
-    thead = "".join(f"<th scope='col'>{html.escape(c)}</th>" for c in cols)
+    thead_cells = "".join(f"<th scope='col'>{html.escape(c)}</th>" for c in cols)
     tbody_rows: list[str] = []
     cards: list[str] = []
     for _, row in df.iterrows():
@@ -479,8 +479,8 @@ def _reassort_dataframe_html(df: pd.DataFrame) -> str:
     return f"""
 <div class="reassort-wrap" role="region" aria-label="Résultats réassort">
   <div class="reassort-x-scroll">
-    <table class="reassort-table">
-      <thead><tr>{thead}</tr></thead>
+    <table border="1" class="reassort-table">
+      <thead><tr>{thead_cells}</tr></thead>
       <tbody>{"".join(tbody_rows)}</tbody>
     </table>
   </div>
@@ -674,15 +674,19 @@ def dashboard():
     st.divider()
     with st.container(border=True):
         with st.container():
-            data_grouped_reassort = load_grouped_reassort()
-            base_colors = ['#025864', '#00d47e', '#f4c095', '#ee2e31', '#63474d']
-            data_sorted = sorted(data_grouped_reassort['data'], key=lambda d: d['qty_to_order'], reverse=True)
+            data_grouped_reassort_dict = data_stats['alerts']
+            # Convert the dict to a list of dicts suitable for plotly express
+            data_grouped_reassort = [
+                {"alert": key, "qty_to_order": value}
+                for key, value in data_grouped_reassort_dict.items()
+            ]
+            base_colors = ['#025864', '#00d47e', '#f4c095', '#ee2e31', '#63474d', '#535cc2', '#f97316', '#0891b2']
             alert_to_color = {
-                data['alert']: base_colors[i % len(base_colors)]
-                for i, data in enumerate(data_sorted)
+                row["alert"]: base_colors[i % len(base_colors)]
+                for i, row in enumerate(data_grouped_reassort)
             }
             fig = px.bar(
-                data_grouped_reassort['data'],
+                data_grouped_reassort,
                 x='alert',
                 y='qty_to_order',
                 color='alert',

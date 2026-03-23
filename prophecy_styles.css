@@ -222,9 +222,11 @@
 /* Un seul tableau : scroll H+V ici ; colonnes toujours alignées */
 .reassort-x-scroll {
     position: relative;
+    isolation: isolate;
     max-width: 100%;
     max-height: min(55vh, 520px);
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     scrollbar-color: var(--st-border-color) var(--st-secondary-background-color);
@@ -236,6 +238,7 @@
 .reassort-table {
     border-collapse: separate;
     border-spacing: 0;
+    position: relative;
     font-size: 14px;
     color: var(--st-text-color);
     table-layout: auto;
@@ -243,31 +246,32 @@
     min-width: 100%;
     border: 1px solid var(--st-border-color);
 }
-/* thead au-dessus du tbody à l’affichage (évite que les lignes recouvrent l’en-tête au scroll) */
 .reassort-table thead {
-    position: relative;
-    z-index: 2;
-}
-.reassort-table tbody {
-    position: relative;
-    z-index: 1;
-}
-.reassort-table thead th {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 20;
+}
+.reassort-table thead th {
+    position: sticky !important;
+    top: 0;
+    z-index: 30 !important;
     text-align: left;
     padding: 10px 12px;
     font-weight: 600;
     color: var(--st-text-color);
     background-color: var(
         --st-dataframe-header-background-color,
-        var(--st-secondary-background-color)
-    );
+        #ffffff
+    ) !important;
     white-space: nowrap;
     border-right: 1px solid var(--st-border-color);
     border-bottom: 2px solid var(--st-border-color);
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--st-text-color) 14%, transparent);
+    background-clip: padding-box;
+    box-shadow: none;
+}
+.reassort-table thead tr {
+    position: relative !important;
+    z-index: 25 !important;
 }
 .reassort-table thead th:last-child {
     border-right: none;
