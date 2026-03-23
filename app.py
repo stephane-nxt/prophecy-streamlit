@@ -525,6 +525,20 @@ def load_interests_list(min = 10):
     response = requests.get(f'{RFM_PROPHECY_API_URL}/interests', params=payload)
     return response.json()
 
+def load_rfm_clients(segments = None, tag_b2b = None, tag_christmas = None, tag_holidays = None, interests = None, interest_contains = None, partner_id = None, partner_name_contains = None):
+    payload = {
+        'segments': segments,
+        'tag_b2b': tag_b2b,
+        'tag_christmas': tag_christmas,
+        'tag_holidays': tag_holidays,
+        'interests': interests,
+        'interest_contains': interest_contains,
+        'partner_id': partner_id,
+        'partner_name_contains': partner_name_contains
+    }
+    response = requests.get(f'{RFM_PROPHECY_API_URL}/customers', params=payload)
+    return response.json()
+
 def load_stats():
     response = requests.get(f'{API_URL}/stats')
     return response.json()
@@ -599,6 +613,9 @@ def top_data(data, column_name, top_n=None):
         return result
 
 
+def load_grouped_reassort():
+    response = requests.get(f'{API_URL}/grouped-reassort')
+    return response.json()
 
 def rfm():
     data_segments = load_segments_rfm()
@@ -629,7 +646,7 @@ def rfm():
             data_interests_df = pd.DataFrame(data_interests)
             st.plotly_chart(px.bar(data_interests_df, title=f"Interest list at least {min_clients} clients", x='interest', y='count', color='interest'))
         else:
-            st.error("No interests data found")
+            st.error("Pas de données d'intérêts trouvées")
 
 def dashboard():
     data_stats = load_stats()
@@ -655,26 +672,47 @@ def dashboard():
         )
 
     st.divider()
-
-    st.markdown("### 📦 Faire un Réassort")
     with st.container(border=True):
-        category_selected = st.selectbox("Select a category", [category['category'] for category in data_categories], index=None)
+        with st.container():
+            data_grouped_reassort = load_grouped_reassort()
+            base_colors = ['#025864', '#00d47e', '#f4c095', '#ee2e31', '#63474d']
+            data_sorted = sorted(data_grouped_reassort['data'], key=lambda d: d['qty_to_order'], reverse=True)
+            alert_to_color = {
+                data['alert']: base_colors[i % len(base_colors)]
+                for i, data in enumerate(data_sorted)
+            }
+            fig = px.bar(
+                data_grouped_reassort['data'],
+                x='alert',
+                y='qty_to_order',
+                color='alert',
+                color_discrete_map=alert_to_color,
+                labels={
+                    "alert": "Etat du stock",
+                    "qty_to_order": "Quantité à commander",
+                }
+            )
+            fig.update_layout(showlegend=False)
+            st.plotly_chart(fig)
+    st.markdown("### 📦 Recommandations d'approvisionnement")
+    with st.container():
+        category_selected = st.selectbox("Filtrer par catégorie", placeholder="Choisir une catégorie", options=[category['category'] for category in data_categories], index=None)
         col_1_1, col_1_2, col_1_3 = st.columns(3)
         col_2_1, col_2_2 = st.columns(2)
         with col_1_1:
             # Rupture imminente, Forte demande, À commander, Stable, Stock OK, Ne pas recommander
-            urgency_selected = st.selectbox("Select an urgency", ["Rupture imminente", "Forte demande", "À commander", "Stable", "Stock OK", "Ne pas recommander"], index=None)
+            urgency_selected = st.selectbox("Niveau d'alerte", placeholder="Choisir un niveau d'alerte", options=["Rupture imminente", "Forte demande", "À commander", "Stable", "Stock OK", "Ne pas recommander"], index=None)
         with col_1_2:
             #Croissance, Maturité, Déclin, Obsolescence, Inactif
-            growth_selected = st.selectbox("Select a growth", ["Croissance", "Maturité", "Déclin", "Obsolescence", "Inactif"], index=None)
+            growth_selected = st.selectbox("Tendance des ventes", placeholder="Choisir une tendance des ventes", options=["Croissance", "Maturité", "Déclin", "Obsolescence", "Inactif"], index=None)
         with col_1_3:
             #Quantité à commander minimum
-            quantity_selected = st.number_input("Minimum quantity to order", min_value=1, value=1, step=1)
+            quantity_selected = st.number_input("Quantité à commander minimum", min_value=1, value=1, step=1)
         with col_2_1:
-            limit_selected = st.number_input("Limit selected", min_value=1, value=100, step=50)
+            limit_selected = st.number_input("Limite de résultats", min_value=1, value=100, step=50)
         with col_2_2:
-            offset_selected = st.number_input("Offset selected", min_value=0, value=0, step=50)
-        is_clicked = st.button("Make a reassort", type="primary")
+            offset_selected = st.number_input("Décalage", min_value=0, value=0, step=50)
+        is_clicked = st.button("Valider", type="primary")
         category_id = None
         data_reassort = make_reassort(category_id, urgency_selected, growth_selected, quantity_selected, limit_selected, offset_selected)
         if is_clicked:
@@ -683,7 +721,7 @@ def dashboard():
         if len(data_reassort) > 0:
             st.html(_reassort_dataframe_html(data_reassort))
         else:
-            st.error("No reassort data found")
+            st.error("Pas de recommandations d'approvisionnement trouvées")
             
 
 st.set_page_config(
