@@ -669,7 +669,10 @@ def rfm():
             f"""
         <div class="custom-header">
             <div class="header-title">Prophecy</div>
-            <div class="header-value" style="font-size: 28px;">Segmentation RFM & profils</div>
+            <div class="header-value" style="font-size: 28px;">
+                Segmentation RFM & Profils
+                <span class="header-trend">Actualisé</span>
+            </div>
         </div>
         """
     )
@@ -805,7 +808,7 @@ if st.session_state.get('authentication_status'):
     )
     rfm_page = st.Page(
         rfm,
-        title="Segmentation RFM",
+        title="Segmentation RFM & Profils",
         icon=":material/segment:",
     )
     pg = st.navigation([dashboard_page, rfm_page], position="hidden")
@@ -825,7 +828,7 @@ if st.session_state.get('authentication_status'):
         )
         st.page_link(
             rfm_page,
-            label="Segmentation RFM",
+            label="Segments Clients",
             icon=":material/segment:",
             width="stretch",
         )
