@@ -667,7 +667,6 @@ def dashboard():
         _kpi_metrics_section_html(data_stats, cost_display, coverage_display),
         )
 
-    st.divider()
     st.markdown(f"### {img_tag} Etat de stock sur 30 jours", unsafe_allow_html=True)
     with st.container(border=True):
         with st.container():
