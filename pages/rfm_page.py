@@ -37,6 +37,33 @@ def _kpi_icon_html(svg_markup: str) -> str:
 
 
 _KPI_SVG = {
+    "users": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>'
+        '<circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/>'
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/>'
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    ),
+    "money": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
+        '<rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+        '<circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>'
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" d="M6 10h.01M18 14h.01"/></svg>'
+    ),
+    "badge_trend": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" d="M12 3l2.4 2.2 3.2-.2 1.4 2.9 2.8 1.6-.6 3.1 1.4 2.8-2.4 2.2-.2 3.2-2.9 1.4-1.6 2.8-3.1-.6-2.8 1.4-2.2-2.4-3.2-.2-1.4-2.9-2.8-1.6.6-3.1-1.4-2.8 2.4-2.2.2-3.2 2.9-1.4 1.6-2.8z"/>'
+        '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" points="8 14 11 11 13 13 16 10"/>'
+        '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" points="14.5 10 16 10 16 11.5"/></svg>'
+    ),
     "package": (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
         '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
@@ -71,12 +98,20 @@ _KPI_SVG = {
 }
 
 
-def _rfm_kpi_card_html(label: str, value: str, subtitle: str, icon_svg: str | None = None) -> str:
+def _rfm_kpi_card_html(
+    label: str,
+    value: str,
+    subtitle: str,
+    icon_svg: str | None = None,
+    icon_emoji: str | None = None,
+) -> str:
     label_esc = html.escape(label)
     value_esc = html.escape(value)
     subtitle_esc = html.escape(subtitle)
     icon_block = ""
-    if icon_svg:
+    if icon_emoji:
+        icon_block = f'<span class="metric-card-icon" aria-hidden="true">{html.escape(icon_emoji)}</span>'
+    elif icon_svg:
         icon_block = _kpi_icon_html(icon_svg)
     return f"""
         <div class="custom-header metric-card">
@@ -119,13 +154,13 @@ def _rfm_kpis_section_html(kpis: dict) -> str:
             "Total Clients",
             _fmt_grouped_int(kpis.get("total_clients")),
             "Base de données active",
-            icon_svg=_KPI_SVG["package"],
+            icon_emoji="👥",
         ),
         _rfm_kpi_card_html(
             "Valeur Moyenne",
             _fmt_money_ar(kpis.get("average_monetary")),
             "Panier moyen cumulé",
-            icon_svg=_KPI_SVG["euro"],
+            icon_emoji="💰",
         ),
         _rfm_kpi_card_html(
             "Champions",
@@ -163,7 +198,9 @@ def load_interests_list(min_clients=10):
 
 
 def rfm():
+    data_segments = load_segments_rfm()
     data_rfm_kpis = load_rfm_dashboard_kpis()
+    segment_palette = ["#025864", "#00d47e", "#f4c095", "#ee2e31"]
 
     st.html(
         """
@@ -180,3 +217,64 @@ def rfm():
     if data_rfm_kpis:
         st.html(_rfm_kpis_section_html(data_rfm_kpis))
         st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown("### Performance des segments clients")
+
+    by_segment = data_segments.get("by_segment", []) if isinstance(data_segments, dict) else []
+    by_segment_ca = data_segments.get("by_segment_ca", []) if isinstance(data_segments, dict) else []
+    if by_segment:
+        seg_df = pd.DataFrame(by_segment)
+        seg_df["count"] = pd.to_numeric(seg_df["count"], errors="coerce").fillna(0)
+        seg_df["part"] = (seg_df["count"] / max(seg_df["count"].sum(), 1)) * 100
+        seg_df = seg_df.sort_values("count", ascending=False)
+
+        ca_df = pd.DataFrame(by_segment_ca) if by_segment_ca else pd.DataFrame(columns=["segment", "ca"])
+        if not ca_df.empty:
+            ca_df["ca"] = pd.to_numeric(ca_df["ca"], errors="coerce").fillna(0)
+            ca_df = ca_df.sort_values("ca", ascending=False)
+
+        col1, col2 = st.columns(2, gap="small")
+
+        with col1:
+            with st.container(border=True):
+                st.markdown("### 💰 CA par segment")
+                if not ca_df.empty:
+                    fig_bar_ca = px.bar(
+                        ca_df,
+                        x="ca",
+                        y="segment",
+                        orientation="h",
+                        color="segment",
+                        color_discrete_sequence=segment_palette,
+                        labels={"segment": "Segment", "ca": "Chiffre d'affaires"},
+                    )
+                    fig_bar_ca.update_layout(showlegend=False, margin={"l": 10, "r": 10, "t": 20, "b": 10})
+                    st.plotly_chart(fig_bar_ca, use_container_width=True)
+
+                    top_ca = ca_df.iloc[0]
+                    st.caption(
+                        f"Top CA: **{top_ca['segment']}** ({_fmt_money_ar(top_ca['ca'])})."
+                    )
+                else:
+                    st.info("Aucune donnée de CA par segment.")
+
+        with col2:
+            with st.container(border=True):
+                st.markdown("### 👥 Clients par segment")
+                fig_donut = px.pie(
+                    seg_df,
+                    names="segment",
+                    values="count",
+                    hole=0.55,
+                    color="segment",
+                    color_discrete_sequence=segment_palette,
+                )
+                fig_donut.update_traces(textposition="inside", texttemplate="%{percent:.1%}")
+                fig_donut.update_layout(margin={"l": 10, "r": 10, "t": 20, "b": 10})
+                st.plotly_chart(fig_donut, use_container_width=True)
+
+                top_row = seg_df.iloc[0]
+                st.caption(
+                    f"Segment dominant: **{top_row['segment']}** "
+                    f"({_fmt_grouped_int(top_row['count'])} clients, {_fmt_percent(top_row['part'])})."
+                )

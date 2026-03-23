@@ -2,6 +2,9 @@
 
 :root {
     --reassort-table-border: #e7e3e4;
+    --card-border: #dbe5e7;
+    --card-shadow: 0 2px 8px rgba(15, 81, 82, 0.08);
+    --card-shadow-hover: 0 6px 16px rgba(15, 81, 82, 0.14);
 }
 
 /* Ajustement du positionnement global sous la navbar Streamlit */
@@ -117,14 +120,18 @@
 .metric-card.custom-header {
     margin-bottom: 0;
     padding: clamp(14px, 3vw, 18px) clamp(16px, 3vw, 22px);
-    border-radius: var(--st-base-radius, 12px);
+    border-radius: 14px;
     box-sizing: border-box;
-    background: var(--st-secondary-background-color);
+    background: #ffffff;
     color: var(--st-text-color);
-    border: 0.5px solid var(--reassort-table-border);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--st-primary-color) 12%, transparent) inset,
-        0 2px 6px color-mix(in srgb, var(--st-text-color) 8%, transparent),
-        0 8px 20px color-mix(in srgb, var(--st-text-color) 6%, transparent);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.metric-card.custom-header:hover {
+    transform: translateY(-2px);
+    border-color: #bfd6d8;
+    box-shadow: var(--card-shadow-hover);
 }
 .metric-card .header-title-row {
     margin-bottom: 6px;
@@ -216,15 +223,9 @@
     position: relative;
     padding: clamp(12px, 1.4vw, 16px);
     border-radius: 14px;
-    background: #ffffff;
-    border: 1px solid #dbe5e7;
-    box-shadow: 0 2px 8px rgba(15, 81, 82, 0.08);
-    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 .kpi-grid--rfm .metric-card.custom-header:hover {
     transform: translateY(-2px);
-    border-color: #bfd6d8;
-    box-shadow: 0 6px 16px rgba(15, 81, 82, 0.14);
 }
 .kpi-grid--rfm .metric-card .header-title {
     font-size: 14px;
@@ -258,6 +259,20 @@
     color: white;
     margin-bottom: 32px;
     box-shadow: 0 10px 20px rgba(15, 81, 82, 0.15);
+}
+
+/* Même style de card pour les blocs graphiques (st.container(border=True)) */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #ffffff;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    transform: translateY(-2px);
+    border-color: #bfd6d8 !important;
+    box-shadow: var(--card-shadow-hover);
 }
 
 /* Bandeau titre de page uniquement (pas les cartes KPI .metric-card) : remonte sous la barre Streamlit */
