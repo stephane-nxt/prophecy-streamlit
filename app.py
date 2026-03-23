@@ -705,6 +705,9 @@ def dashboard():
         category_selected = st.selectbox("Filtrer par catégorie", placeholder="Choisir une catégorie", options=[category['category'] for category in data_categories], index=None)
         col_1_1, col_1_2, col_1_3 = st.columns(3)
         col_2_1, col_2_2 = st.columns(2)
+        category_id = None
+        if category_selected is not None:
+            category_id = [category['category_id'] for category in data_categories if category['category'] == category_selected][0]
         with col_1_1:
             # Rupture imminente, Forte demande, À commander, Stable, Stock OK, Ne pas recommander
             urgency_selected = st.selectbox("Niveau d'alerte", placeholder="Choisir un niveau d'alerte", options=["Rupture imminente", "Forte demande", "À commander", "Stable", "Stock OK", "Ne pas recommander"], index=None)
@@ -718,12 +721,8 @@ def dashboard():
             limit_selected = st.number_input("Limite de résultats", min_value=1, value=100, step=50)
         with col_2_2:
             offset_selected = st.number_input("Décalage", min_value=0, value=0, step=50)
-        is_clicked = st.button("Valider", type="primary")
-        category_id = None
         data_reassort = make_reassort(category_id, urgency_selected, growth_selected, quantity_selected, limit_selected, offset_selected)
-        if is_clicked:
-            if category_selected is not None:
-                category_id = [category['category_id'] for category in data_categories if category['category'] == category_selected][0]
+        st.html("<br>")
         if len(data_reassort) > 0:
             st.html(_reassort_dataframe_html(data_reassort, stock_color_map=alert_to_color))
         else:
