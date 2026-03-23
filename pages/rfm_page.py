@@ -163,7 +163,6 @@ def load_interests_list(min_clients=10):
 
 
 def rfm():
-    data_segments = load_segments_rfm()
     data_rfm_kpis = load_rfm_dashboard_kpis()
 
     st.html(
@@ -181,28 +180,3 @@ def rfm():
     if data_rfm_kpis:
         st.html(_rfm_kpis_section_html(data_rfm_kpis))
         st.markdown("<br>", unsafe_allow_html=True)
-
-    with st.container(border=True):
-        st.markdown("### 📊 Répartition des clients par segment RFM")
-        data_segments_df = pd.DataFrame(data_segments["by_segment"])
-        st.plotly_chart(px.bar(data_segments_df, x="segment", y="count", color="segment"))
-
-    st.divider()
-    with st.container(border=True):
-        min_clients = st.number_input("Minimum de clients", value=10, min_value=1, step=1)
-        st.button("Valider", type="primary", on_click=load_interests_list, args=(min_clients,))
-
-        data_interests = load_interests_list(min_clients)
-        if len(data_interests) > 0:
-            data_interests_df = pd.DataFrame(data_interests)
-            st.plotly_chart(
-                px.bar(
-                    data_interests_df,
-                    title=f"Interest list at least {min_clients} clients",
-                    x="interest",
-                    y="count",
-                    color="interest",
-                )
-            )
-        else:
-            st.error("Pas de données d'intérêts trouvées")
