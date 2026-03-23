@@ -147,10 +147,58 @@ def load_rfm_dashboard_kpis():
     return {}
 
 
+def load_segment_interests(top_n: int = 3):
+    response = requests.get(f"{RFM_PROPHECY_API_URL}/segments/interest", params={"top_n": top_n})
+    if response.status_code == 200:
+        return response.json()
+    return {}
+
+
+def _segment_interest_rows(segments) -> list[dict]:
+    rows = []
+    for seg in segments:
+        if not isinstance(seg, dict):
+            continue
+        seg_name = seg.get("segment")
+        interests = seg.get("by_interest", [])
+        if not seg_name or not isinstance(interests, list):
+            continue
+        for item in interests:
+            if not isinstance(item, dict):
+                continue
+            interest_name = item.get("interest")
+            count = item.get("count")
+            if interest_name is None or count is None:
+                continue
+            rows.append(
+                {
+                    "segment": str(seg_name),
+                    "interest": str(interest_name),
+                    "count": count,
+                }
+            )
+    return rows
+
+
+def _interests_dataframe(payload) -> pd.DataFrame:
+    if not isinstance(payload, dict):
+        return pd.DataFrame()
+    segments = payload.get("segments")
+    if not isinstance(segments, list):
+        return pd.DataFrame()
+    rows = _segment_interest_rows(segments)
+    df = pd.DataFrame(rows, columns=["segment", "interest", "count"])
+    if df.empty:
+        return df
+    df["count"] = pd.to_numeric(df["count"], errors="coerce").fillna(0)
+    return df
+
+
 def rfm():
     data_segments = load_segments_rfm()
     data_rfm_kpis = load_rfm_dashboard_kpis()
     segment_palette = ["#025864", "#00d47e", "#f4c095", "#ee2e31"]
+    interests_palette = ["#025864", "#00d47e", "#f4c095", "#ee2e31", "#63474d"]
 
     st.html(
         """
@@ -228,3 +276,47 @@ def rfm():
                     f"Segment dominant: **{top_row['segment']}** "
                     f"({_fmt_grouped_int(top_row['count'])} clients, {_fmt_percent(top_row['part'])})."
                 )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.container(border=True):
+        col_title, col_filter = st.columns([4, 1], gap="small")
+        with col_title:
+            st.markdown("### 🎁 Intérêts Majeurs par Segment")
+        with col_filter:
+            top_n = st.number_input("Top", min_value=1, max_value=10, value=3, step=1, key="rfm_top_interests")
+
+        interests_payload = load_segment_interests(int(top_n))
+        interests_df = _interests_dataframe(interests_payload)
+
+        if interests_df.empty:
+            st.info("Pas de données d'intérêts par segment disponibles.")
+        else:
+            # Top N global (tous segments confondus) pour respecter exactement la valeur du filtre.
+            top_interest_names = (
+                interests_df.groupby("interest", as_index=False)["count"]
+                .sum()
+                .sort_values("count", ascending=False)
+                .head(int(top_n))["interest"]
+                .tolist()
+            )
+            top_interests_df = interests_df[interests_df["interest"].isin(top_interest_names)].copy()
+            top_interests_df["interest"] = pd.Categorical(
+                top_interests_df["interest"],
+                categories=top_interest_names,
+                ordered=True,
+            )
+
+            grouped_fig = px.bar(
+                top_interests_df,
+                x="segment",
+                y="count",
+                color="interest",
+                barmode="group",
+                color_discrete_sequence=interests_palette,
+                labels={"segment": "Segment", "count": "Nombre de clients", "interest": "Intérêt"},
+            )
+            grouped_fig.update_layout(
+                margin={"l": 10, "r": 10, "t": 10, "b": 10},
+                legend_title_text="Intérêt",
+            )
+            st.plotly_chart(grouped_fig, use_container_width=True)
