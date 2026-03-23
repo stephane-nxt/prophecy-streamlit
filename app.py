@@ -632,6 +632,11 @@ def top_data(data, column_name, top_n=None):
     else:
         return result
 
+def get_encoded_image():
+    image_path = "img/reassort_icon.png"
+    with open(image_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode()
+    return encoded
 
 def load_grouped_reassort():
     response = requests.get(f'{API_URL}/grouped-reassort')
@@ -640,6 +645,8 @@ def load_grouped_reassort():
 def dashboard():
     data_stats = load_stats()
     data_categories = load_categories()
+    encoded = get_encoded_image()
+    img_tag = f'<img src="data:image/png;base64,{encoded}" width="28" style="vertical-align:middle; margin-right:10px;"/>'
     st.html(
             f"""
         <div class="custom-header">
@@ -661,6 +668,7 @@ def dashboard():
         )
 
     st.divider()
+    st.markdown(f"### {img_tag} Etat de stock sur 30 jours", unsafe_allow_html=True)
     with st.container(border=True):
         with st.container():
             data_grouped_reassort_dict = data_stats['alerts']
@@ -684,14 +692,12 @@ def dashboard():
                     "alert": "Etat du stock",
                     "qty_to_order": "Quantité à commander",
                 },
-                title="Etat de stock sur 30 jours"
             )
             fig.update_layout(showlegend=False)
             st.plotly_chart(fig)
     
-    with open("img/reassort_icon.png", "rb") as image_file:
-        encoded = base64.b64encode(image_file.read()).decode()
-    img_tag = f'<img src="data:image/png;base64,{encoded}" width="28" style="vertical-align:middle; margin-right:10px;"/>'
+    
+    
     st.markdown(
         f"### {img_tag} Recommandations d'approvisionnement",
         unsafe_allow_html=True
