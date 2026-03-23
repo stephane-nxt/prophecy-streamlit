@@ -131,6 +131,80 @@ def _kpi_metric_card_html(
         """
 
 
+def _rfm_kpi_card_html(label: str, value: str, subtitle: str, icon_svg: str | None = None) -> str:
+    """Carte KPI pour la section RFM (avec sous-texte)."""
+    label_esc = html.escape(label)
+    value_esc = html.escape(value)
+    subtitle_esc = html.escape(subtitle)
+    icon_block = ""
+    if icon_svg:
+        icon_block = _kpi_icon_html(icon_svg)
+    return f"""
+        <div class="custom-header metric-card">
+            <div class="header-title-row">
+                {icon_block}
+                <p class="header-title">{label_esc}</p>
+            </div>
+            <p class="header-value">{value_esc}</p>
+            <p class="metric-subtitle">{subtitle_esc}</p>
+        </div>
+        """
+
+
+def _fmt_grouped_int(n) -> str:
+    try:
+        return f"{int(float(n)):,}".replace(",", " ")
+    except (TypeError, ValueError):
+        return str(n)
+
+
+def _fmt_money_ar(n) -> str:
+    try:
+        amount = f"{float(n):,.2f}".replace(",", " ").replace(".", ",")
+        return f"Ar {amount}"
+    except (TypeError, ValueError):
+        return str(n)
+
+
+def _fmt_percent(n, decimals: int = 2) -> str:
+    try:
+        value = f"{float(n):.{decimals}f}".replace(".", ",")
+        return f"{value}%"
+    except (TypeError, ValueError):
+        return str(n)
+
+
+def _rfm_kpis_section_html(kpis: dict) -> str:
+    cards = [
+        _rfm_kpi_card_html(
+            "Total Clients",
+            _fmt_grouped_int(kpis.get("total_clients")),
+            "Base de données active",
+            icon_svg=_KPI_SVG["package"],
+        ),
+        _rfm_kpi_card_html(
+            "Valeur Moyenne",
+            _fmt_money_ar(kpis.get("average_monetary")),
+            "Panier moyen cumulé",
+            icon_svg=_KPI_SVG["euro"],
+        ),
+        _rfm_kpi_card_html(
+            "Champions",
+            _fmt_grouped_int(kpis.get("champions_count")),
+            f'{_fmt_percent(kpis.get("champions_pct"))} de la base',
+            icon_svg=_KPI_SVG["trending_up"],
+        ),
+        _rfm_kpi_card_html(
+            "Clients B2B",
+            _fmt_percent(kpis.get("b2b_pct")),
+            f'{_fmt_grouped_int(kpis.get("b2b_count"))} clients pro',
+            icon_svg=_KPI_SVG["cart"],
+        ),
+    ]
+    cells = "".join(f'<div class="kpi-grid-item">{c}</div>' for c in cards)
+    return f'<div class="kpi-grid kpi-grid--rfm" role="region" aria-label="Indicateurs RFM">{cells}</div>'
+
+
 def _kpi_metrics_section_html(data_stats: dict, cost_display: str, coverage_display: str) -> str:
     """Grille responsive : 1 col. mobile, 2 tablette, 3 desktop ; couverture sur toute la largeur."""
     cards = [
@@ -563,6 +637,12 @@ def load_segments_rfm():
     response = requests.get(f'{RFM_PROPHECY_API_URL}/segments')
     return response.json()
 
+def load_rfm_dashboard_kpis():
+    response = requests.get(f'{RFM_PROPHECY_API_URL}/dashboard/kpis')
+    if response.status_code == 200:
+        return response.json()
+    return {}
+
 def load_interests_list(min = 10):
     payload = {
         'min_clients': min
@@ -664,6 +744,7 @@ def load_grouped_reassort():
 
 def rfm():
     data_segments = load_segments_rfm()
+    data_rfm_kpis = load_rfm_dashboard_kpis()
     data_interests = load_interests_list(10)
     st.html(
             f"""
@@ -676,6 +757,10 @@ def rfm():
         </div>
         """
     )
+
+    if data_rfm_kpis:
+        st.html(_rfm_kpis_section_html(data_rfm_kpis))
+        st.markdown("<br>", unsafe_allow_html=True)
 
     with st.container(border=True):
         st.markdown("### 📊 Répartition des clients par segment RFM")

@@ -142,6 +142,13 @@
     letter-spacing: -0.4px;
     color: var(--st-primary-color, #0f5152) !important;
 }
+.metric-card .metric-subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--st-gray-text-color, var(--st-text-color));
+    opacity: 0.9;
+}
 .metric-card-icon {
     display: inline-flex;
     align-items: center;
@@ -188,6 +195,60 @@
 .kpi-grid .metric-card.custom-header {
     width: 100%;
     flex: 1;
+}
+
+/* KPI RFM : 4 cartes sur une ligne en desktop + style un peu plus premium */
+.kpi-grid--rfm {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: clamp(10px, 1.8vw, 14px);
+}
+@media (min-width: 44rem) {
+    .kpi-grid--rfm {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (min-width: 72rem) {
+    .kpi-grid--rfm {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+.kpi-grid--rfm .metric-card.custom-header {
+    position: relative;
+    padding: clamp(12px, 1.4vw, 16px);
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid #dbe5e7;
+    box-shadow: 0 2px 8px rgba(15, 81, 82, 0.08);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.kpi-grid--rfm .metric-card.custom-header:hover {
+    transform: translateY(-2px);
+    border-color: #bfd6d8;
+    box-shadow: 0 6px 16px rgba(15, 81, 82, 0.14);
+}
+.kpi-grid--rfm .metric-card .header-title {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.95;
+}
+.kpi-grid--rfm .metric-card .header-value {
+    font-size: clamp(1.55rem, 1.1rem + 1.1vw, 2.15rem);
+    letter-spacing: -0.3px;
+}
+.kpi-grid--rfm .metric-card .metric-subtitle {
+    margin-top: 6px;
+    font-size: 12.5px;
+    opacity: 0.85;
+}
+.kpi-grid--rfm .metric-card-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--st-primary-color) 11%, transparent);
+}
+.kpi-grid--rfm .metric-card-icon img {
+    width: 16px;
+    height: 16px;
 }
 
 .custom-header {
