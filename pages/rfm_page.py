@@ -26,8 +26,9 @@ def _kpi_theme_primary_hex() -> str:
     return "#0f5152"
 
 
-def _kpi_icon_html(svg_markup: str) -> str:
-    colored = svg_markup.replace("currentColor", _kpi_theme_primary_hex())
+def _kpi_icon_html(svg_markup: str, color_hex: str | None = None) -> str:
+    icon_color = color_hex or _kpi_theme_primary_hex()
+    colored = svg_markup.replace("currentColor", icon_color)
     uri = _svg_to_data_uri(colored)
     return (
         '<span class="metric-card-icon">'
@@ -37,6 +38,15 @@ def _kpi_icon_html(svg_markup: str) -> str:
 
 
 _KPI_SVG = {
+    "alert": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>'
+        '<line x1="12" x2="12" y1="9" y2="13" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+        '<line x1="12" x2="12.01" y1="17" y2="17" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    ),
     "trending_up": (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">'
         '<polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
@@ -60,6 +70,7 @@ def _rfm_kpi_card_html(
     subtitle: str,
     icon_svg: str | None = None,
     icon_emoji: str | None = None,
+    icon_color: str | None = None,
 ) -> str:
     label_esc = html.escape(label)
     value_esc = html.escape(value)
@@ -68,7 +79,7 @@ def _rfm_kpi_card_html(
     if icon_emoji:
         icon_block = f'<span class="metric-card-icon" aria-hidden="true">{html.escape(icon_emoji)}</span>'
     elif icon_svg:
-        icon_block = _kpi_icon_html(icon_svg)
+        icon_block = _kpi_icon_html(icon_svg, color_hex=icon_color)
     return f"""
         <div class="custom-header metric-card">
             <div class="header-title-row">
@@ -114,7 +125,9 @@ def _fmt_number_fr(n, decimals: int = 0) -> str:
     return f"{value:,.{decimals}f}".replace(",", " ").replace(".", ",")
 
 
-def _rfm_kpis_section_html(kpis: dict) -> str:
+def _rfm_kpis_section_html(kpis: dict, at_risk_count: int | None = None, at_risk_pct: float | None = None) -> str:
+    risk_count = at_risk_count if at_risk_count is not None else int(kpis.get("champions_count", 0) or 0)
+    risk_pct = at_risk_pct if at_risk_pct is not None else float(kpis.get("champions_pct", 0) or 0)
     cards = [
         _rfm_kpi_card_html(
             "Total Clients",
@@ -129,10 +142,11 @@ def _rfm_kpis_section_html(kpis: dict) -> str:
             icon_emoji="💰",
         ),
         _rfm_kpi_card_html(
-            "Champions",
-            _fmt_grouped_int(kpis.get("champions_count")),
-            f'{_fmt_percent(kpis.get("champions_pct"))} de la base',
-            icon_svg=_KPI_SVG["trending_up"],
+            "À risque",
+            _fmt_grouped_int(risk_count),
+            f"{_fmt_percent(risk_pct)} de la base",
+            icon_svg=_KPI_SVG["alert"],
+            icon_color="#dc2626",
         ),
         _rfm_kpi_card_html(
             "Clients B2B",
@@ -307,6 +321,8 @@ def _inject_rfm_table_css() -> None:
 def rfm():
     data_segments = load_segments_rfm()
     data_rfm_kpis = load_rfm_dashboard_kpis()
+    by_segment = data_segments.get("by_segment", []) if isinstance(data_segments, dict) else []
+    by_segment_ca = data_segments.get("by_segment_ca", []) if isinstance(data_segments, dict) else []
     segment_palette = ["#025864", "#00d47e", "#f4c095", "#ee2e31"]
     interests_palette = ["#025864", "#00d47e", "#f4c095", "#ee2e31", "#63474d"]
 
@@ -323,13 +339,19 @@ def rfm():
     )
 
     if data_rfm_kpis:
-        st.html(_rfm_kpis_section_html(data_rfm_kpis))
+        total_clients = float(data_rfm_kpis.get("total_clients", 0) or 0)
+        at_risk_count = 0
+        for row in by_segment:
+            seg_name = str(row.get("segment", "")).strip().lower()
+            if "risque" in seg_name:
+                at_risk_count = int(row.get("count", 0) or 0)
+                break
+        at_risk_pct = (at_risk_count / total_clients * 100) if total_clients > 0 else 0.0
+        st.html(_rfm_kpis_section_html(data_rfm_kpis, at_risk_count=at_risk_count, at_risk_pct=at_risk_pct))
         st.markdown("<br>", unsafe_allow_html=True)
 
     st.markdown("### Performance des segments clients")
 
-    by_segment = data_segments.get("by_segment", []) if isinstance(data_segments, dict) else []
-    by_segment_ca = data_segments.get("by_segment_ca", []) if isinstance(data_segments, dict) else []
     if by_segment:
         seg_df = pd.DataFrame(by_segment)
         seg_df["count"] = pd.to_numeric(seg_df["count"], errors="coerce").fillna(0)
