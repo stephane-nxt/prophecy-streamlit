@@ -519,6 +519,50 @@ def rfm():
         st.info("Aucun client trouvé pour ces filtres.")
     else:
         df_customers = pd.DataFrame(customers)
+
+        # Anti-redondance affichage: certains clients peuvent être renvoyés plusieurs fois
+        # par l'API. On garde une seule ligne par `partner_name`.
+        if "partner_name" in df_customers.columns:
+            df_customers["partner_name"] = (
+                df_customers["partner_name"].astype(str).str.strip()
+            )
+            sort_cols: list[str] = []
+            sort_ascending: list[bool] = []
+
+            if "last_purchase" in df_customers.columns:
+                df_customers["_last_purchase_dt"] = pd.to_datetime(
+                    df_customers["last_purchase"], errors="coerce"
+                )
+                sort_cols.append("_last_purchase_dt")
+                sort_ascending.append(False)  # plus récent d'abord
+
+            if "recency_days" in df_customers.columns:
+                df_customers["recency_days"] = pd.to_numeric(
+                    df_customers["recency_days"], errors="coerce"
+                )
+                sort_cols.append("recency_days")
+                sort_ascending.append(True)  # plus petit = plus récent
+
+            if "monetary" in df_customers.columns:
+                df_customers["monetary"] = pd.to_numeric(
+                    df_customers["monetary"], errors="coerce"
+                )
+                sort_cols.append("monetary")
+                sort_ascending.append(False)  # plus élevé d'abord
+
+            if sort_cols:
+                # `mergesort` pour garder une stabilité en cas d'égalité.
+                df_customers = df_customers.sort_values(
+                    sort_cols, ascending=sort_ascending, kind="mergesort"
+                )
+
+            df_customers = df_customers.drop_duplicates(
+                subset=["partner_name"], keep="first"
+            )
+
+            if "_last_purchase_dt" in df_customers.columns:
+                df_customers.drop(columns=["_last_purchase_dt"], inplace=True)
+
         column_mapping = {
             "partner_name": "Client",
             "segment": "Segment RFM",
