@@ -19,10 +19,8 @@ credentials:
 # Configure your environment
 create an .env file and take example with the .env.example file 
 ```
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=
-AWS_BUCKET_NAME=
+PROPHECY_API_URL=
+RFM_PROPHECY_API_URL=
 ```
 
 # Run with docker
@@ -30,3 +28,5 @@ to run it do:
 ```bash
 docker compose up -d
 ```
+
+and you can access it on : http://localhost:8501
