@@ -171,7 +171,6 @@ def _kpi_metrics_section_html(data_stats: dict, cost_display: str, coverage_disp
     #     icon_svg=_KPI_SVG["timer"],
     # )
     cells = "".join(f'<div class="kpi-grid-item">{c}</div>' for c in cards)
-    cells += f'<div class="kpi-grid-item kpi-grid-item--full">{coverage}</div>'
     return f'<div class="kpi-grid" role="region" aria-label="Indicateurs clés">{cells}</div>'
 
 
